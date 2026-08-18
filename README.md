@@ -420,6 +420,8 @@ PRDATA = AA
 # 📈 Simulation Waveform
 
 The waveform verifies the APB signal transitions during read and write operations.
+<img width="1361" height="393" alt="image" src="https://github.com/user-attachments/assets/b8712ab2-e63d-409c-8af7-839fe471cc6d" />
+
 
 The important signals to observe are:
 
@@ -530,11 +532,6 @@ Interested in **VLSI Design & Verification, Verilog, SystemVerilog, and Embedded
 * LinkedIn: [Venkatesh R S](https://www.linkedin.com/in/venkatesh-r-shettar-15a048259)
 * GitHub: [Venkii17](https://github.com/Venkii17)
 
----
-
-## ⭐ If you found this project useful
-
-Consider giving the repository a **star ⭐**!
 
 			
 		
