@@ -1,0 +1,199 @@
+...................DUT......................
+module APB(PCLK,PRESETN,PSEL,PENABLE,PADDR,PWDATA,PRDATA,PWRITE,PREADY);
+
+	input PCLK,PRESETN,PSEL,PENABLE,PWRITE;
+	input [7:0] PADDR;
+	input [7:0] PWDATA;
+	output PREADY;
+	output reg [7:0] PRDATA;
+
+	parameter IDLE = 2'b00;
+	parameter SETUP = 2'b01;
+	parameter ACCESS = 2'b10;
+	
+	reg [7:0] mem[255:0];
+	reg [1:0] current_state, next_state;
+
+	assign PREADY=(PSEL&&PENABLE);
+
+	always @(posedge PCLK or negedge PRESETN)
+	begin
+		if(!PRESETN)
+		begin
+			current_state<=IDLE;
+			PRDATA<=0;
+		end
+		else
+		begin
+			current_state<=next_state;
+		end
+
+	end
+		
+	always @(*)
+		begin
+			case(current_state)
+			IDLE :
+			begin       
+				if(PSEL==1)
+				next_state=SETUP;
+				
+				else
+				next_state = IDLE;
+			end
+			SETUP : 
+			begin
+				if(PENABLE==1 && PSEL==1)
+				next_state = ACCESS;
+								
+				else
+				next_state = SETUP;
+			end
+			ACCESS : 
+			begin
+				if(PSEL && PENABLE)
+				begin 
+					if(PWRITE==0)
+						PRDATA<=mem[PADDR];
+					else
+						mem[PADDR]<=PWDATA;
+				end
+				        
+			end
+
+				default:
+				next_state=IDLE;
+		endcase
+	end
+
+endmodule
+........................TEST BENCH.........................
+module tb_APB;
+
+reg PCLK;
+reg PRESETN;
+reg PSEL;
+reg PENABLE;
+reg PWRITE;
+reg [7:0] PADDR;
+reg [7:0] PWDATA;
+
+wire PREADY;
+wire [7:0] PRDATA;
+
+// Instantiate DUT
+APB dut(
+    .PCLK(PCLK),
+    .PRESETN(PRESETN),
+    .PSEL(PSEL),
+    .PENABLE(PENABLE),
+    .PADDR(PADDR),
+    .PWDATA(PWDATA),
+    .PWRITE(PWRITE),
+    .PREADY(PREADY),
+    .PRDATA(PRDATA)
+);
+
+// Clock Generation
+always #5 PCLK = ~PCLK;
+/*
+// Write Task
+task apb_write;
+input [31:0] addr;
+input [7:0] data;
+begin
+    @(posedge PCLK);
+    PADDR    = addr;
+    PWDATA   = data;
+    PWRITE   = 1;
+    PSEL     = 1;
+    PENABLE  = 0;      // SETUP
+
+    @(posedge PCLK);
+    PENABLE  = 1;      // ACCESS
+
+    @(posedge PCLK);
+    PSEL     = 0;
+    PENABLE  = 0;
+    PWRITE   = 0;
+    $display("Time=%0t Address=%h write Data=%h",
+             $time, PADDR, PWDATA);
+end
+endtask
+
+// Read Task
+task apb_read;
+input [31:0] addr;
+begin
+    @(posedge PCLK);
+    PADDR    = addr;
+    PWRITE   = 0;
+    PSEL     = 1;
+    PENABLE  = 0;      // SETUP
+
+    @(posedge PCLK);
+    PENABLE  = 1;      // ACCESS
+
+    @(posedge PCLK);
+    $display("Time=%0t Address=%h Read Data=%h",
+             $time, PADDR, PRDATA);
+
+    PSEL     = 0;
+    PENABLE  = 0;
+end
+endtask
+
+// Test Sequence
+initial
+begin
+    PCLK     = 0;
+    PRESETN  = 0;
+    PSEL     = 0;
+    PENABLE  = 0;
+    PWRITE   = 0;
+    PADDR    = 0;
+    PWDATA   = 0;
+
+    // Apply Reset
+    #20;
+    PRESETN = 1;
+
+    // Write Data
+    apb_write(32'h00000010, 8'hAA);
+    #10;
+    apb_write(32'h00000020, 8'h55);
+    #10;
+
+    // Read Data
+   /* apb_read(32'h00000010);
+    #10;
+    apb_read(32'h00000020);
+   #10;
+
+    #20;
+    $finish;
+end*/
+
+
+initial
+begin
+	PCLK=0;
+	PRESETN=0;#10;
+	PRESETN=1;
+	PSEL=1;
+	PENABLE=1;
+	PWRITE=1;
+	PADDR=8'b11111111;
+	PWDATA=8'hAA;
+	$display("add=%d,data=%d,Write=%d",PADDR,PWDATA,PWRITE);
+
+	#20;
+	
+	PWRITE=0;
+	$display("add=%d,read=%d,Write=%d",PADDR,PRDATA,PWRITE);
+	#10;
+	$finish;
+
+
+end 
+endmodule
