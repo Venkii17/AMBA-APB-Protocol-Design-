@@ -1,4 +1,3 @@
-# AMBA-APB-Protocol-Design-
 # AMBA APB Protocol Design in Verilog
 
 ## 📌 Project Overview
